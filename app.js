@@ -20,6 +20,9 @@ mongoose.connect('mongodb://localhost/imdb');
 
 const scraper = require("./lib/scraper")
 
+process.on('uncaughtException', function (err) {
+    console.log('Caught exception: ' + err);
+});
 
 let proxyUri = "https://proxy.easyconfig.net/proxy-list?filter=ssl,http,alive"
 
@@ -47,8 +50,8 @@ async function getProxy() {
     return proxyList
 }
 
-function randProxy(){
-    return proxyList[Math.floor(Math.random()*proxyList.length)];
+function randProxy() {
+    return proxyList[Math.floor(Math.random() * proxyList.length)];
 }
 
 async function downloadFiles() {
