@@ -240,8 +240,9 @@ async function indexData() {
 
 async function scrapeData() {
     return new Promise(async resolve => {
-        let documents = await ImdbDB.find({ summary: null,  startYear: {$lte: 2019}}).count()
-        let corsor = await ImdbDB.find({ summary: null, startYear: {$lte: 2019} }).sort({startYear: -1}).lean().cursor()
+        let documents = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 } }).count()
+        let corsor = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 } }).lean().cursor()
+        // corsor.sort({startYear: -1})
         const bar1 = new cliProgress.Bar({
             format: ' Scraper |' + _colors.blue('{bar}') + '| {percentage}% | {value}/{total}',
             barCompleteChar: '\u2588',
