@@ -16,7 +16,7 @@ mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 mongoose.set('useUnifiedTopology', true);
-mongoose.connect('mongodb://localhost/imdb');
+mongoose.connect('mongodb://localhost/torrent');
 
 const scraper = require("./lib/scraper")
 
@@ -24,7 +24,7 @@ process.on('uncaughtException', function (err) {
     console.log('Caught exception: ' + err);
 });
 
-let proxyUri = "https://proxy.easyconfig.net/proxy-list?filter=ssl,http,alive"
+let proxyUri = "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all"
 
 let proxyList = []
 // proxy.easyconfig.net/proxy-list?filter=ssl,http,alive
@@ -276,9 +276,9 @@ async function scrapeData() {
 var db = mongoose.connection;
 db.once('open', async function () {
     console.log("MongoDb Connected!");
-    // await downloadFiles()
-    // await extractFiles()
-    // await indexData()
+    await downloadFiles()
+    await extractFiles()
+    await indexData()
     await getProxy()
     await scrapeData()
 });
