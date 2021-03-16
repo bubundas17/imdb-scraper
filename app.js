@@ -16,7 +16,7 @@ mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 mongoose.set('useUnifiedTopology', true);
-mongoose.connect('mongodb://localhost/torrent');
+mongoose.connect('mongodb://localhost/imdb');
 
 const scraper = require("./lib/scraper")
 
@@ -24,7 +24,7 @@ process.on('uncaughtException', function (err) {
     console.log('Caught exception: ' + err);
 });
 
-let proxyUri = "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all"
+// let proxyUri = "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all"
 
 let proxyList = []
 // proxy.easyconfig.net/proxy-list?filter=ssl,http,alive
@@ -120,7 +120,10 @@ let MovieRrogress = 0
 
 const MovieBasic = transform(async function (record, callback) {
     MovieRrogress++
-    if (record.titleType == 'movie') {
+    // console.log(record);
+    if (record.titleType === 'movie' || record.titleType === "tvSeries") {
+
+        // if(extractNumber(record.startYear) < 1990) return callback(null, "");
         // await ImdbDB.findOneAndUpdate({
         //     tconst: record.tconst,
         // }, {
@@ -137,6 +140,8 @@ const MovieBasic = transform(async function (record, callback) {
         try {
             await ImdbDB.create({
                 tconst: record.tconst,
+                titleType: record.titleType,
+                isAdult: record.isAdult,
                 title: record.originalTitle,
                 primaryTitle: record.primaryTitle,
                 startYear: extractNumber(record.startYear),
@@ -153,7 +158,6 @@ const MovieBasic = transform(async function (record, callback) {
 }, {
     parallel: 2
 })
-
 
 
 let RatingRrogress = 0
@@ -182,7 +186,6 @@ const RatingFitter = transform(async function (record, callback) {
 })
 
 
-
 async function indexData() {
     for (file of files) {
         await new Promise(resolve => {
@@ -207,7 +210,7 @@ async function indexData() {
                         bar1.update(MovieRrogress)
                     }, 100)
                     var s = fs.createReadStream(filename)
-                    s.pipe(csv({ separator: '\t' }))
+                    s.pipe(csv({separator: '\t'}))
                         .pipe(MovieBasic)
                         .on("finish", function () {
                             bar1.stop()
@@ -222,7 +225,7 @@ async function indexData() {
 
 
                     var s = fs.createReadStream(filename)
-                    s.pipe(csv({ separator: '\t' }))
+                    s.pipe(csv({separator: '\t'}))
                         .pipe(RatingFitter)
                         .on("finish", function () {
                             bar1.stop()
@@ -237,11 +240,12 @@ async function indexData() {
 }
 
 
-
 async function scrapeData() {
     return new Promise(async resolve => {
-        let documents = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 } }).count()
-        let corsor = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 } }).lean().cursor()
+        // let documents = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 }, tconst: "tt0988824" }).count()
+        // let corsor = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 }, tconst: "tt0988824"  }).lean().cursor()
+        let documents = await ImdbDB.find({tconst: "tt0988824"}).count()
+        let corsor = await ImdbDB.find({tconst: "tt0988824"}).lean().cursor()
         // corsor.sort({startYear: -1})
         const bar1 = new cliProgress.Bar({
             format: ' Scraper |' + _colors.blue('{bar}') + '| {percentage}% | {value}/{total}',
@@ -259,13 +263,15 @@ async function scrapeData() {
                 delete data.title
                 data.story = data.storyline
                 // data.title = undefined
-                await ImdbDB.findOneAndUpdate({ tconst: doc.tconst }, { $set: data })
+                console.log(data)
+                await ImdbDB.findOneAndUpdate({tconst: doc.tconst}, {$set: data})
             } catch (e) {
-                // console.log(e)
+                console.log("error")
+                console.log(e)
             }
             progress++
             bar1.update(progress)
-        }, { parallel: 600 })
+        }, {parallel: 600})
 
 
     })

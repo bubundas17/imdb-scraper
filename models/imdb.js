@@ -3,6 +3,7 @@ let mongoose = require('mongoose');
 let Schema = mongoose.Schema({
     tconst: {type: String, unique: true, index: 1},
     title: String,
+    titleType: {type: String, index: 1},
     primaryTitle: String,
     runtime: Number,
     startYear: Number,
@@ -10,6 +11,11 @@ let Schema = mongoose.Schema({
     rating: {
         averageRating: Number,
         numVotes: Number
+    },
+    yt: {
+        title: String,
+        link: String,
+        videoID: String
     },
     poster: String,
     directors: [
@@ -34,8 +40,23 @@ let Schema = mongoose.Schema({
     genres: [
         String
     ],
+    seasons: [
+        Number
+    ],
+    plotKeywords: [
+        String
+    ],
+    certificate: [
+        String
+    ],
+    productionCo: {
+        String
+    },
+    isAdult: {type: Boolean},
     story: String,
     summary: String,
+    scraped: {type: Boolean, default: false},
+    tyExtracted: {type: Boolean, default: false},
 });
 
 module.exports = mongoose.model('imdb', Schema);
