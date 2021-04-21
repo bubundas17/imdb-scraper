@@ -10,13 +10,18 @@ const countLinesInFile = require('count-lines-in-file');
 const transform = require('stream-transform')
 const mongoose = require('mongoose');
 const rp = require("request-promise");
+const  youtube = require('@yimura/scraper')
+const yt = new youtube.default('en-US');
 
 const ImdbDB = require("./models/imdb")
 mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 mongoose.set('useUnifiedTopology', true);
-mongoose.connect('mongodb://localhost/imdb');
+mongoose.connect('mongodb://localhost/imdb', {
+    useCreateIndex: true,
+    useNewUrlParser: true
+});
 
 const scraper = require("./lib/scraper")
 
@@ -25,8 +30,11 @@ process.on('uncaughtException', function (err) {
 });
 
 // let proxyUri = "https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all"
+let proxyUri = "https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks4&timeout=1350&country=all&simplified=true"
 
-let proxyList = []
+
+let proxyList = [
+]
 // proxy.easyconfig.net/proxy-list?filter=ssl,http,alive
 
 const files = [
@@ -240,12 +248,51 @@ async function indexData() {
 }
 
 
+async function ScrapeYtTrailer(){
+    return new Promise(async resolve => {
+        let documents = await ImdbDB.find({tyExtracted: false, "rating.numVotes": {$gte: 1000}, startYear:  {$gte: 1995}}).count()
+        let corsor = await ImdbDB.find({tyExtracted: false, "rating.numVotes": {$gte: 1000}, startYear:  {$gte: 1995}}).lean().cursor()
+        const bar1 = new cliProgress.Bar({
+            format: ' Scraper |' + _colors.blue('{bar}') + '| {percentage}% | {value}/{total}',
+            barCompleteChar: '\u2588',
+            barIncompleteChar: '\u2591',
+            hideCursor: true,
+            fps: 60
+        });
+        let progress = 0
+        bar1.start(documents, 0)
+        corsor.eachAsync(async (doc) => {
+            let reqtry = 0;
+            let maxtry = 25;
+            while(reqtry < maxtry){
+                try {
+                    let data = await yt.search(doc.primaryTitle + " Trailer", {
+                        searchType: 'video'
+                    })
+                    let video = data.videos[0];
+                    await ImdbDB.findOneAndUpdate({tconst: doc.tconst}, {$set: {yt: {title: video.title, link: video.link, duration: video.duration, videoID: video.id}, tyExtracted: true}})
+                    progress++
+                    bar1.update(progress)
+                    return true;
+                } catch(e) {
+                    reqtry ++;
+                    console.log("YT FETCh ERROR")
+                }
+            }
+            progress++
+            console.log("error")
+            return 0
+    }, {parallel: 50})
+})
+}
+
+
 async function scrapeData() {
     return new Promise(async resolve => {
         // let documents = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 }, tconst: "tt0988824" }).count()
         // let corsor = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 }, tconst: "tt0988824"  }).lean().cursor()
-        let documents = await ImdbDB.find({tconst: "tt0988824"}).count()
-        let corsor = await ImdbDB.find({tconst: "tt0988824"}).lean().cursor()
+        let documents = await ImdbDB.find({scraped: false}).count()
+        let corsor = await ImdbDB.find({scraped: false}).lean().cursor()
         // corsor.sort({startYear: -1})
         const bar1 = new cliProgress.Bar({
             format: ' Scraper |' + _colors.blue('{bar}') + '| {percentage}% | {value}/{total}',
@@ -257,21 +304,30 @@ async function scrapeData() {
         let progress = 0
         bar1.start(documents, 0)
         corsor.eachAsync(async (doc) => {
-            try {
-                let data = await scraper.scrape(doc.tconst, randProxy())
-                data.title = undefined;
-                delete data.title
-                data.story = data.storyline
-                // data.title = undefined
-                console.log(data)
-                await ImdbDB.findOneAndUpdate({tconst: doc.tconst}, {$set: data})
-            } catch (e) {
-                console.log("error")
-                console.log(e)
+            let reqtry = 0;
+            let maxtry = 25;
+            while(reqtry < maxtry){
+                try {
+                    let data = await scraper.scrape(doc.tconst, randProxy())
+                    data.title = undefined;
+                    delete data.title
+                    data.story = data.storyline
+                    // data.title = undefined
+                    // console.log(data)
+                    await ImdbDB.findOneAndUpdate({tconst: doc.tconst}, {$set: {...data, scraped: true}})
+                     progress++
+                     bar1.update(progress)
+                     return 1;
+                } catch (e) {
+                    reqtry ++;
+                    // console.log(e)
+                }
             }
             progress++
-            bar1.update(progress)
-        }, {parallel: 600})
+            console.log("error")
+            return 0
+
+        }, {parallel: 500})
 
 
     })
@@ -287,6 +343,7 @@ db.once('open', async function () {
     await indexData()
     await getProxy()
     await scrapeData()
+    await ScrapeYtTrailer()
 });
 
 

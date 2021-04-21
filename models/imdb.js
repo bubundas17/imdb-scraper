@@ -15,7 +15,8 @@ let Schema = mongoose.Schema({
     yt: {
         title: String,
         link: String,
-        videoID: String
+        videoID: String,
+        duration: Number
     },
     poster: String,
     directors: [

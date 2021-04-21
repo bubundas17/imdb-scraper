@@ -45,6 +45,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.14.tgz#1c1d6e3c75dba466e0326948d56e8bd72a1903d2"
   integrity sha512-u/SJDyXwuihpwjXy7hOOghagLEV1KdAST6syfnOk6QZAMzZuWZqXy5aYYZbh8Jdpd4escVFP0MvftHNDb9pruA==
 
+"@yimura/scraper@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@yimura/scraper/-/scraper-1.1.0.tgz#e5df935ea14a4d511298b861adb4980c712b785d"
+  integrity sha512-oX6mXIZS4QaSgdDJJgRT/xzHRpYkdn3cz/YqlYJSGch9XRSY1PMJB8s8TN0QYsgvWKS1IM+UhVd9qqtS60H87Q==
+
 abab@^2.0.0:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/abab/-/abab-2.0.3.tgz#623e2075e02eb2d3f2475e49f99c91846467907a"
