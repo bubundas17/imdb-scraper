@@ -338,11 +338,11 @@ async function scrapeData() {
 var db = mongoose.connection;
 db.once('open', async function () {
     console.log("MongoDb Connected!");
-    await downloadFiles()
-    await extractFiles()
-    await indexData()
-    await getProxy()
-    await scrapeData()
+    // await downloadFiles()
+    // await extractFiles()
+    // await indexData()
+    // await getProxy()
+    // await scrapeData()
     await ScrapeYtTrailer()
 });
 
