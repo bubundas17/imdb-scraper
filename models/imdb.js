@@ -6,7 +6,7 @@ let Schema = mongoose.Schema({
     titleType: {type: String, index: 1},
     primaryTitle: String,
     runtime: Number,
-    startYear: Number,
+    startYear: {type: Number,  index: 1},
     endYear: Number,
     rating: {
         averageRating: Number,

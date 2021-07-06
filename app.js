@@ -10,7 +10,7 @@ const countLinesInFile = require('count-lines-in-file');
 const transform = require('stream-transform')
 const mongoose = require('mongoose');
 const rp = require("request-promise");
-const  youtube = require('@yimura/scraper')
+const youtube = require('@yimura/scraper')
 const yt = new youtube.default('en-US');
 
 const ImdbDB = require("./models/imdb")
@@ -18,7 +18,7 @@ mongoose.set('useNewUrlParser', true);
 mongoose.set('useFindAndModify', false);
 mongoose.set('useCreateIndex', true);
 mongoose.set('useUnifiedTopology', true);
-mongoose.connect('mongodb://localhost/imdb', {
+mongoose.connect('mongodb://localhost/torrent', {
     useCreateIndex: true,
     useNewUrlParser: true
 });
@@ -218,7 +218,7 @@ async function indexData() {
                         bar1.update(MovieRrogress)
                     }, 100)
                     var s = fs.createReadStream(filename)
-                    s.pipe(csv({separator: '\t'}))
+                    s.pipe(csv({ separator: '\t' }))
                         .pipe(MovieBasic)
                         .on("finish", function () {
                             bar1.stop()
@@ -233,7 +233,7 @@ async function indexData() {
 
 
                     var s = fs.createReadStream(filename)
-                    s.pipe(csv({separator: '\t'}))
+                    s.pipe(csv({ separator: '\t' }))
                         .pipe(RatingFitter)
                         .on("finish", function () {
                             bar1.stop()
@@ -248,10 +248,10 @@ async function indexData() {
 }
 
 
-async function ScrapeYtTrailer(){
+async function ScrapeYtTrailer() {
     return new Promise(async resolve => {
-        let documents = await ImdbDB.find({tyExtracted: false, "rating.numVotes": {$gte: 1000}, startYear:  {$gte: 1995}}).count()
-        let corsor = await ImdbDB.find({tyExtracted: false, "rating.numVotes": {$gte: 1000}, startYear:  {$gte: 1995}}).lean().cursor()
+        let documents = await ImdbDB.find({ tyExtracted: false, "rating.numVotes": { $gte: 1000 }, startYear: { $gte: 1995 } }).count()
+        let corsor = await ImdbDB.find({ tyExtracted: false, "rating.numVotes": { $gte: 1000 }, startYear: { $gte: 1995 } }).lean().cursor()
         const bar1 = new cliProgress.Bar({
             format: ' Scraper |' + _colors.blue('{bar}') + '| {percentage}% | {value}/{total}',
             barCompleteChar: '\u2588',
@@ -264,35 +264,37 @@ async function ScrapeYtTrailer(){
         corsor.eachAsync(async (doc) => {
             let reqtry = 0;
             let maxtry = 25;
-            while(reqtry < maxtry){
+            while (reqtry < maxtry) {
                 try {
                     let data = await yt.search(doc.primaryTitle + " Trailer", {
                         searchType: 'video'
                     })
                     let video = data.videos[0];
-                    await ImdbDB.findOneAndUpdate({tconst: doc.tconst}, {$set: {yt: {title: video.title, link: video.link, duration: video.duration, videoID: video.id}, tyExtracted: true}})
+                    await ImdbDB.findOneAndUpdate({ tconst: doc.tconst }, { $set: { yt: { title: video.title, link: video.link, duration: video.duration, videoID: video.id }, tyExtracted: true } })
                     progress++
                     bar1.update(progress)
                     return true;
-                } catch(e) {
-                    reqtry ++;
+                } catch (e) {
+                    reqtry++;
                     console.log("YT FETCh ERROR")
                 }
             }
             progress++
             console.log("error")
             return 0
-    }, {parallel: 50})
-})
+        }, { parallel: 50 })
+    })
 }
 
 
 async function scrapeData() {
     return new Promise(async resolve => {
-        // let documents = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 }, tconst: "tt0988824" }).count()
-        // let corsor = await ImdbDB.find({ summary: null, startYear: { $lte: 2019 }, tconst: "tt0988824"  }).lean().cursor()
-        let documents = await ImdbDB.find({scraped: false}).count()
-        let corsor = await ImdbDB.find({scraped: false}).lean().cursor()
+        // let documents = await ImdbDB.find({ tconst: "tt9620292" }).count()
+        // let corsor = await ImdbDB.find({ tconst: "tt9620292" }).lean().cursor()
+  
+
+        let documents = await ImdbDB.find({ startYear: 2020 }).count()
+        let corsor = await ImdbDB.find({ startYear: 2020 }).sort({ startYear: -1 }).lean().cursor()
         // corsor.sort({startYear: -1})
         const bar1 = new cliProgress.Bar({
             format: ' Scraper |' + _colors.blue('{bar}') + '| {percentage}% | {value}/{total}',
@@ -305,8 +307,8 @@ async function scrapeData() {
         bar1.start(documents, 0)
         corsor.eachAsync(async (doc) => {
             let reqtry = 0;
-            let maxtry = 25;
-            while(reqtry < maxtry){
+            let maxtry = 50;
+            while (reqtry < maxtry) {
                 try {
                     let data = await scraper.scrape(doc.tconst, randProxy())
                     data.title = undefined;
@@ -314,12 +316,12 @@ async function scrapeData() {
                     data.story = data.storyline
                     // data.title = undefined
                     // console.log(data)
-                    await ImdbDB.findOneAndUpdate({tconst: doc.tconst}, {$set: {...data, scraped: true}})
-                     progress++
-                     bar1.update(progress)
-                     return 1;
+                    await ImdbDB.findOneAndUpdate({ tconst: doc.tconst }, { $set: { ...data, scraped: true } })
+                    progress++
+                    bar1.update(progress)
+                    return 1;
                 } catch (e) {
-                    reqtry ++;
+                    reqtry++;
                     // console.log(e)
                 }
             }
@@ -327,7 +329,7 @@ async function scrapeData() {
             console.log("error")
             return 0
 
-        }, {parallel: 500})
+        }, { parallel: 5000 })
 
 
     })
@@ -341,9 +343,9 @@ db.once('open', async function () {
     // await downloadFiles()
     // await extractFiles()
     // await indexData()
-    // await getProxy()
-    // await scrapeData()
-    await ScrapeYtTrailer()
+    await getProxy()
+    await scrapeData()
+    // await ScrapeYtTrailer()
 });
 
 
